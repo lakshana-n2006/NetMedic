@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trading Desk</title>
+<style>
+:root{--bg:#0b0e14;--panel:#121722;--surface:#161c28;--alt:#1c2331;--border:#252d3d;--text:#e6eaf2;--sub:#7d879a;
+  --accent:#f0b90b;--good:#22c55e;--bad:#f87171;--info:#60a5fa;--purple:#a78bfa;--warn:#fbbf24;
+  --bubble:#2a2410;--bubbleBorder:#4a3f14}
+body.light{--bg:#f1f4f8;--panel:#ffffff;--surface:#ffffff;--alt:#f5f7fa;--border:#dde2ea;--text:#18202a;--sub:#64707f;
+  --accent:#d99a00;--good:#16a34a;--bad:#dc2626;--info:#2563eb;--purple:#7c3aed;--warn:#b45309;
+  --bubble:#fff6d6;--bubbleBorder:#f0d36b}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;height:100vh;overflow:hidden}
+.hidden{display:none!important}
+.ic{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;flex:none}
+.ic.lg{width:20px;height:20px;vertical-align:-4px}
+input,select{padding:9px 11px;border:1px solid var(--border);border-radius:6px;background:var(--alt);color:var(--text);font:13px "Segoe UI",sans-serif;outline:none;width:100%}
+input:focus{border-color:var(--accent)}
+input::placeholder{color:#8a93a3}
+button{font:700 12px "Segoe UI",sans-serif;border:0;border-radius:6px;padding:10px 14px;color:#0b0e14;background:var(--accent);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+button:hover{filter:brightness(1.08)}
+button.ghost{background:var(--alt);color:var(--text);border:1px solid var(--border)}
+button.icon{background:var(--alt);color:var(--text);border:1px solid var(--border);padding:9px 11px}
+.label{font-size:10px;font-weight:700;color:var(--sub);letter-spacing:.8px;text-transform:uppercase;margin:0 0 6px;display:flex;align-items:center;gap:6px}
+.brand{font-weight:800;font-size:18px;color:var(--accent);letter-spacing:1px;display:flex;align-items:center;gap:9px}
+.sub{color:var(--sub);font-size:12px}
+.err{color:var(--bad);font-size:12px;min-height:16px;margin-top:10px}
+.switch{text-align:center;margin-top:18px;color:var(--sub);font-size:12px}
+.switch a{color:var(--accent);cursor:pointer;font-weight:700}
+.field{margin-bottom:14px}
+
+/* Login */
+.login{height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,#1a2740,#0b0e14 70%)}
+body.light .login{background:radial-gradient(circle at 30% 20%,#dbe7ff,#f1f4f8 70%)}
+.loginCard{width:380px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:34px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.tagline{color:var(--sub);font-size:12px;margin:6px 0 26px}
+
+/* Top bar */
+.topbar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:var(--panel);border-bottom:1px solid var(--border)}
+.topbar .left,.topbar .right{display:flex;align-items:center;gap:14px}
+.live{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;color:var(--good)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
+
+/* Chat */
+.trader{height:100vh;display:flex;flex-direction:column}
+.chatHead{padding:12px 18px;border-bottom:1px solid var(--border);background:var(--panel);display:flex;align-items:center;gap:12px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--alt);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--accent)}
+.messages{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.row{display:flex}
+.row.me{justify-content:flex-end}
+.bubble{max-width:62%;padding:9px 13px;border-radius:12px;background:var(--alt);border:1px solid var(--border)}
+.row.me .bubble{background:var(--bubble);border-color:var(--bubbleBorder)}
+.bubble .meta{font-size:10px;color:var(--sub);margin-bottom:3px}
+.bubble .txt{font-size:14px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word}
+.receipt{display:flex;align-items:center;gap:12px}
+.receipt .fname{font-weight:700;font-size:13px}
+.receipt .fsize{font-size:11px;color:var(--sub)}
+.receipt button{padding:7px 10px;font-size:11px}
+.note{align-self:center;color:var(--sub);font-size:11px;font-style:italic;padding:4px 0;display:flex;align-items:center;gap:6px}
+.note.bad{color:var(--bad)}
+.composer{border-top:1px solid var(--border);background:var(--panel);padding:12px 16px;display:flex;gap:10px;align-items:center}
+.composer .to{width:160px;flex:none}
+.composer input.msg{flex:1}
+.composer button{padding:10px 20px}
+
+/* Admin */
+.adminWrap{height:100vh;display:flex;flex-direction:column}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.kpi{background:var(--panel);padding:12px 16px}
+.kpi .v{font-size:18px;font-weight:800;margin-top:4px}
+.adminBody{flex:1;display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--border);min-height:0}
+.adminBody>div{background:var(--panel);min-height:0;display:flex;flex-direction:column}
+.panelHead{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
+.chartBody{flex:1;position:relative;min-height:0}
+canvas{width:100%;height:100%;display:block}
+.tabs{display:flex;gap:2px}
+.tabs button{background:transparent;color:var(--sub);border-radius:0;padding:6px 12px;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tableWrap{flex:1;overflow:auto;min-height:0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-size:10px;color:var(--sub);letter-spacing:.6px;text-transform:uppercase;background:var(--panel);padding:7px 10px;position:sticky;top:0;border-bottom:1px solid var(--border)}
+td{padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+td .ic{margin-right:6px}
+select{width:auto;padding:6px 8px}
+</style>
+</head>
+<body class="dark">
+
+<!-- Icon sprite: simple line icons, reused throughout the page -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-userplus" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 12 0v1"/><path d="M19 8v6M16 11h6"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><path d="M6 6.5h.01M6 17.5h.01"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></symbol>
+    <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="currentColor"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></symbol>
+  </defs>
+</svg>
+
+<!-- LOGIN -->
+<section id="login" class="login">
+  <div class="loginCard">
+    <div class="brand"><svg class="ic lg"><use href="#i-chart"/></svg> TRADING DESK</div>
+    <div class="tagline" id="tagline">Sign in to your trading account</div>
+
+    <div id="signinForm">
+      <div class="field"><div class="label">Username</div><input id="u" placeholder="e.g. A" autocomplete="username"></div>
+      <div class="field"><div class="label">Password</div><input id="p" type="password" placeholder="Password" autocomplete="current-password"></div>
+      <button id="signin" style="width:100%;padding:11px;justify-content:center"><svg class="ic"><use href="#i-lock"/></svg> SIGN IN</button>
+      <div class="switch">New trader? <a onclick="mode('signup')">Create an account</a></div>
+    </div>
+
+    <div id="signupForm" class="hidden">
+      <div class="field"><div class="label">Choose a username</div><input id="nu" placeholder="e.g. C or trader_01"></div>
+      <div class="field"><div class="label">Password</div><input id="np" type="password" placeholder="At least 6 characters"></div>
+      <div class="field"><div class="label">Confirm password</div><input id="np2" type="password" placeholder="Repeat password"></div>
+      <button id="signup" style="width:100%;padding:11px;justify-content:center"><svg class="ic"><use href="#i-userplus"/></svg> CREATE ACCOUNT</button>
+      <div class="switch">Already registered? <a onclick="mode('signin')">Sign in</a></div>
+    </div>
+
+    <div class="err" id="err"></div>
+  </div>
+</section>
+
+<!-- TRADER CHAT -->
+<section id="trader" class="hidden trader">
+  <div class="topbar">
+    <div class="left">
+      <span class="brand"><svg class="ic lg"><use href="#i-chart"/></svg> TRADING DESK</span>
+      <span class="sub" id="who"></span>
+    </div>
+    <div class="right">
+      <span class="live" id="status"><span class="dot"></span><span id="statusText">Connecting</span></span>
+      <button class="ghost themeBtn" onclick="toggleTheme()"></button>
+      <button class="ghost" onclick="location.reload()"><svg class="ic"><use href="#i-logout"/></svg> Sign out</button>
+    </div>
+  </div>
+
+  <div class="chatHead">
+    <div class="avatar" id="peerAvatar">?</div>
+    <div>
+      <div style="font-weight:700">Private chat</div>
+      <div class="sub" id="peerName">Enter a trader name in the To box to start</div>
+    </div>
+  </div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="composer">
+    <input class="to" id="to" placeholder="To: e.g. B">
+    <input class="msg" id="msg" placeholder="Type a message and press Enter">
+    <input type="file" id="file" accept="application/pdf,.pdf" class="hidden">
+    <button class="icon" title="Send a PDF receipt" onclick="$('#file').click()"><svg class="ic"><use href="#i-clip"/></svg></button>
+    <button onclick="sendMsg()"><svg class="ic"><use href="#i-send"/></svg> Send</button>
+  </div>
+</section>
+
+<!-- ADMIN -->
+<section id="admin" class="hidden adminWrap">
+  <div class="topbar">
+    <div class="left"><span class="brand"><svg class="ic lg"><use href="#i-server"/></svg> TRADING SERVER OPERATIONS</span><span class="sub">Heartbeat health, failover and recovery</span></div>
+    <div class="right">
+      <span class="sub" id="clock" style="color:var(--accent);font-weight:700;display:flex;align-items:center;gap:6px"></span>
+      <button class="ghost themeBtn" onclick="toggleTheme()"></button>
+      <button class="ghost" onclick="location.reload()"><svg class="ic"><use href="#i-logout"/></svg> Sign out</button>
+    </div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="label"><svg class="ic"><use href="#i-server"/></svg> Primary server</div><div class="v" id="k1">-</div></div>
+    <div class="kpi"><div class="label"><svg class="ic"><use href="#i-shield"/></svg> Backup server</div><div class="v" id="k2">-</div></div>
+    <div class="kpi"><div class="label"><svg class="ic"><use href="#i-pulse"/></svg> Heartbeats</div><div class="v" id="k3">0</div></div>
+    <div class="kpi"><div class="label"><svg class="ic"><use href="#i-message"/></svg> Messages routed</div><div class="v" id="k4">0</div></div>
+    <div class="kpi"><div class="label"><svg class="ic"><use href="#i-bolt"/></svg> Failovers</div><div class="v" id="k5">0</div></div>
+    <div class="kpi"><div class="label"><svg class="ic"><use href="#i-clock"/></svg> Last recovery</div><div class="v" id="k6">-</div></div>
+  </div>
+  <div class="adminBody">
+    <div>
+      <div class="panelHead"><span class="label" style="margin:0"><svg class="ic"><use href="#i-pulse"/></svg> Heartbeat health, silence between heartbeats, last 60 s</span></div>
+      <div class="chartBody"><canvas id="health"></canvas></div>
+    </div>
+    <div>
+      <div class="panelHead"><span class="label" style="margin:0"><svg class="ic"><use href="#i-clock"/></svg> Recovery time per failover, outage split</span></div>
+      <div class="chartBody"><canvas id="bars"></canvas></div>
+    </div>
+    <div style="grid-column:1 / span 2">
+      <div class="panelHead">
+        <div class="tabs">
+          <button class="on" onclick="tab('ev',this)"><svg class="ic"><use href="#i-list"/></svg> Event log</button>
+          <button onclick="tab('tr',this)"><svg class="ic"><use href="#i-message"/></svg> Messages</button>
+          <button onclick="tab('rc',this)"><svg class="ic"><use href="#i-bolt"/></svg> Recovery history</button>
+        </div>
+        <select id="filter" onchange="renderEvents()">
+          <option>ALL</option><option>HB</option><option>ACTIVE</option><option>CONN</option>
+          <option>MSG</option><option>SYNC</option><option>WARN</option><option>LOST</option><option>FAILOVER</option>
+        </select>
+      </div>
+      <div class="tableWrap" id="ev"><table><thead><tr><th>Time</th><th>Type</th><th>Details</th></tr></thead><tbody id="evrows"></tbody></table></div>
+      <div class="tableWrap hidden" id="tr"><table><thead><tr><th>Time</th><th>From</th><th>To</th><th>Message</th></tr></thead><tbody id="trrows"></tbody></table></div>
+      <div class="tableWrap hidden" id="rc"><table><thead><tr><th>#</th><th>Detected at</th><th>Silence (ms)</th><th>Promotion (ms)</th><th>Outage (ms)</th><th>Within 3 s</th></tr></thead><tbody id="rcrows"></tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<script>
+const $ = s => document.querySelector(s);
+const LIMIT = 3000, WINDOW = 60000;
+const TYPE_ICON = {HB:'i-pulse', ACTIVE:'i-shield', CONN:'i-link', SYNC:'i-refresh', MSG:'i-message', WARN:'i-alert', LOST:'i-alert', FAILOVER:'i-bolt'};
+const TYPE_COLOR = {HB:'--info', ACTIVE:'--good', CONN:'--good', SYNC:'--purple', WARN:'--warn', LOST:'--bad', FAILOVER:'--good'};
+const cssv = n => getComputedStyle(document.body).getPropertyValue(n).trim();
+const icon = (id, cls) => '<svg class="ic ' + (cls || '') + '"><use href="#' + id + '"/></svg>';
+
+let token = null, myName = '', peer = '', seen = 0, evRows = [], timers = [];
+const ev = {hb:0, msg:0, fail:0, lastAlive:0, promoted:false, lastRec:null, samples:[], markers:[], recs:[], detect:'-', silence:0};
+
+// ---------- Theme ----------
+
+function paintThemeButtons() {
+  const light = document.body.classList.contains('light');
+  document.querySelectorAll('.themeBtn').forEach(b =>
+    b.innerHTML = icon(light ? 'i-moon' : 'i-sun') + (light ? ' Dark mode' : ' Light mode'));
+}
+
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+  paintThemeButtons();
+}
+
+function show(id) { ['login','trader','admin'].forEach(s => $('#'+s).classList.toggle('hidden', s !== id)); }
+
+async function api(path, body) {
+  const r = await fetch(path, body ? {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(body)} : {});
+  let d = {}; try { d = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error(d.error || 'Request failed');
+  return d;
+}
+
+// ---------- Login and sign up ----------
+
+function mode(m) {
+  $('#signinForm').classList.toggle('hidden', m !== 'signin');
+  $('#signupForm').classList.toggle('hidden', m !== 'signup');
+  $('#tagline').textContent = m === 'signin' ? 'Sign in to your trading account' : 'Open a new trading account';
+  $('#err').textContent = '';
+}
+
+function enter(d) {
+  token = d.token; myName = d.name;
+  $('#err').textContent = '';
+  if (d.role === 'ADMIN') {
+    show('admin');
+    timers.push(setInterval(adminTick, 250));
+    adminTick();
+  } else {
+    $('#who').textContent = 'Signed in as ' + myName;
+    show('trader');
+    timers.push(setInterval(pollInbox, 500));
+    pollInbox();
+    $('#to').focus();
+  }
+}
+
+async function login() {
+  try { enter(await api('/api/login', {user: $('#u').value.trim(), pass: $('#p').value})); }
+  catch (e) { $('#err').textContent = e.message; }
+}
+
+async function signup() {
+  const u = $('#nu').value.trim(), p = $('#np').value, p2 = $('#np2').value;
+  if (p !== p2) { $('#err').textContent = 'Passwords do not match.'; return; }
+  try { enter(await api('/api/signup', {user: u, pass: p})); }
+  catch (e) { $('#err').textContent = e.message; }
+}
+
+$('#signin').onclick = login;
+$('#signup').onclick = signup;
+$('#p').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+$('#np2').addEventListener('keydown', e => { if (e.key === 'Enter') signup(); });
+
+// ---------- Chat ----------
+
+function setPeer(name) {
+  peer = name;
+  $('#peerAvatar').textContent = name ? name[0].toUpperCase() : '?';
+  $('#peerName').textContent = name ? 'Chatting with trader ' + name : 'Enter a trader name in the To box to start';
+}
+
+function time() { return new Date().toTimeString().slice(0, 8); }
+function scrollDown() { $('#messages').scrollTop = $('#messages').scrollHeight; }
+
+function bubble(mine, who, text) {
+  const row = document.createElement('div');
+  row.className = 'row' + (mine ? ' me' : '');
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = (mine ? 'You' : who) + '  ·  ' + time();
+  const t = document.createElement('div');
+  t.className = 'txt';
+  t.textContent = text;
+  b.appendChild(meta); b.appendChild(t); row.appendChild(b);
+  $('#messages').appendChild(row);
+  scrollDown();
+}
+
+// Receipt bubble: shows the file name and a download button
+function receiptBubble(mine, who, name, bytes, id) {
+  const row = document.createElement('div');
+  row.className = 'row' + (mine ? ' me' : '');
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = (mine ? 'You' : who) + '  ·  ' + time() + '  ·  Receipt';
+  const box = document.createElement('div');
+  box.className = 'receipt';
+  box.innerHTML = icon('i-file', 'lg');
+  const info = document.createElement('div');
+  info.innerHTML = '<div class="fname"></div><div class="fsize"></div>';
+  info.querySelector('.fname').textContent = name;
+  info.querySelector('.fsize').textContent = (bytes / 1024).toFixed(1) + ' KB PDF';
+  box.appendChild(info);
+  if (!mine && id) {
+    const btn = document.createElement('button');
+    btn.innerHTML = icon('i-download') + ' Download';
+    btn.onclick = () => window.open('/api/file?token=' + encodeURIComponent(token) + '&id=' + encodeURIComponent(id));
+    box.appendChild(btn);
+  }
+  b.appendChild(meta); b.appendChild(box); row.appendChild(b);
+  $('#messages').appendChild(row);
+  scrollDown();
+}
+
+function note(text, bad, iconId) {
+  const n = document.createElement('div');
+  n.className = 'note' + (bad ? ' bad' : '');
+  n.innerHTML = icon(iconId || (bad ? 'i-alert' : 'i-check')) + '<span></span>';
+  n.querySelector('span').textContent = text;
+  $('#messages').appendChild(n);
+  scrollDown();
+}
+
+async function sendMsg() {
+  const to = $('#to').value.trim(), text = $('#msg').value.trim();
+  if (!to) { note('Enter the trader name in the To box.', true); $('#to').focus(); return; }
+  if (!text) return;
+  try {
+    await api('/api/send', {token, to, text});
+    if (to !== peer) setPeer(to);
+    bubble(true, myName, text);
+    $('#msg').value = '';
+    $('#msg').focus();
+  } catch (e) { note(e.message, true); }
+}
+
+// Uploads a PDF receipt to the recipient through the server
+async function sendReceipt(file) {
+  const to = $('#to').value.trim();
+  if (!to) { note('Enter the trader name in the To box first.', true); $('#to').focus(); return; }
+  if (!file.name.toLowerCase().endsWith('.pdf')) { note('Only PDF files can be sent as receipts.', true); return; }
+  if (file.size > 5 * 1024 * 1024) { note('Receipt must be 5 MB or smaller.', true); return; }
+  const url = '/api/upload?token=' + encodeURIComponent(token)
+    + '&to=' + encodeURIComponent(to) + '&name=' + encodeURIComponent(file.name);
+  try {
+    const r = await fetch(url, {method: 'POST', body: file});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Upload failed');
+    if (to !== peer) setPeer(to);
+    receiptBubble(true, myName, file.name, file.size, null);
+  } catch (e) { note(e.message, true); }
+  $('#file').value = '';
+}
+
+$('#file').addEventListener('change', e => { if (e.target.files[0]) sendReceipt(e.target.files[0]); });
+$('#msg').addEventListener('keydown', e => { if (e.key === 'Enter') sendMsg(); });
+$('#to').addEventListener('change', () => setPeer($('#to').value.trim()));
+
+async function pollInbox() {
+  try {
+    const d = await api('/api/inbox?token=' + encodeURIComponent(token));
+    setStatus(d.online);
+    for (const it of d.items) {
+      if (it.type === 'MSG') {
+        if (!peer) { setPeer(it.from); $('#to').value = it.from; }
+        const r = /^\[RECEIPT\] (.+?) \((\d+) bytes\) id=(\S+)$/.exec(it.text);
+        if (r) receiptBubble(false, it.from, r[1], +r[2], r[3]);
+        else bubble(false, it.from, it.text);
+      } else if (it.type === 'ACK') {
+        note('Delivered', false, 'i-check');
+      }
+    }
+  } catch (e) { setStatus(false); }
+}
+
+function setStatus(on) {
+  $('#statusText').textContent = on ? 'Live' : 'Reconnecting';
+  $('#status').style.color = on ? 'var(--good)' : 'var(--bad)';
+  $('#status .dot').style.background = on ? 'var(--good)' : 'var(--bad)';
+}
+
+// ---------- Admin: event handling ----------
+
+function tab(id, btn) {
+  ['ev','tr','rc'].forEach(x => $('#'+x).classList.toggle('hidden', x !== id));
+  document.querySelectorAll('#admin .tabs button').forEach(b => b.classList.toggle('on', b === btn));
+}
+
+function resetAdmin() {
+  Object.assign(ev, {hb:0, msg:0, fail:0, lastAlive:0, promoted:false, lastRec:null, samples:[], markers:[], recs:[]});
+  evRows = []; seen = 0;
+  ['#evrows','#trrows','#rcrows'].forEach(id => $(id).innerHTML = '');
+}
+
+function handle(line) {
+  const i1 = line.indexOf('|'), i2 = line.indexOf('|', i1 + 1);
+  const time = line.slice(0, i1), type = line.slice(i1 + 1, i2), text = line.slice(i2 + 1);
+  const now = Date.now();
+  evRows.push({time, type, text});
+
+  if (type === 'HB') { ev.hb++; ev.lastAlive = now; }
+  else if (type === 'ACTIVE') { ev.lastAlive = now; }
+  else if (type === 'MSG') {
+    ev.msg++;
+    const m = text.match(/^(\S+) -> (\S+): (.*)$/);
+    if (m) {
+      const tr = document.createElement('tr');
+      [time, m[1], m[2], m[3]].forEach(c => { const td = document.createElement('td'); td.textContent = c; tr.appendChild(td); });
+      $('#trrows').prepend(tr);
+    }
+  }
+  else if (type === 'LOST' && text.startsWith('Primary failed')) {
+    const m = text.match(/silent for (\d+) ms/);
+    ev.silence = m ? +m[1] : 0;
+    ev.detect = time;
+    ev.markers.push({t: now, k: 0});
+  }
+  else if (type === 'FAILOVER') {
+    ev.promoted = true; ev.fail++;
+    ev.markers.push({t: now, k: 1});
+    const m = text.match(/in (\d+) ms \(outage since last heartbeat: (\d+) ms\)/);
+    if (m) {
+      const rec = {n: ev.fail, det: ev.detect, sil: ev.silence, promo: +m[1], outage: +m[2]};
+      ev.recs.push(rec); ev.lastRec = rec.promo;
+      const tr = document.createElement('tr');
+      [rec.n, rec.det, rec.sil, rec.promo, rec.outage, rec.promo <= LIMIT ? 'YES' : 'NO']
+        .forEach(c => { const td = document.createElement('td'); td.textContent = c; tr.appendChild(td); });
+      $('#rcrows').prepend(tr);
+    }
+  }
+}
+
+function renderEvents() {
+  const f = $('#filter').value, tb = $('#evrows');
+  tb.innerHTML = '';
+  evRows.filter(r => f === 'ALL' || r.type === f).slice(-400).reverse().forEach(r => {
+    const tr = document.createElement('tr');
+    const td0 = document.createElement('td'); td0.textContent = r.time;
+    const td1 = document.createElement('td');
+    const id = TYPE_ICON[r.type] || 'i-dot';
+    td1.innerHTML = icon(id) + '<span></span>';
+    td1.querySelector('span').textContent = r.type;
+    if (TYPE_COLOR[r.type]) td1.style.color = 'var(' + TYPE_COLOR[r.type] + ')';
+    const td2 = document.createElement('td'); td2.textContent = r.text;
+    tr.append(td0, td1, td2);
+    tb.appendChild(tr);
+  });
+}
+
+function updateKpis() {
+  const now = Date.now();
+  const sil = ev.lastAlive ? now - ev.lastAlive : 0;
+  const silent = ev.lastAlive > 0 && sil >= LIMIT;
+  const set = (id, v, c) => { const el = $(id); el.textContent = v; el.style.color = 'var(' + c + ')'; };
+
+  if (!ev.lastAlive) set('#k1', 'WAITING', '--sub');
+  else if (!ev.promoted) set('#k1', silent ? 'OFFLINE' : 'ONLINE', silent ? '--bad' : '--good');
+  else set('#k1', silent ? 'ACTIVE LOST' : 'BACKUP ACTIVE', silent ? '--bad' : '--good');
+
+  if (ev.promoted) set('#k2', silent ? 'DOWN' : 'PROMOTED', silent ? '--bad' : '--good');
+  else if (!ev.lastAlive) set('#k2', 'WAITING', '--sub');
+  else if (silent) set('#k2', 'TAKING OVER', '--warn');
+  else set('#k2', 'STANDBY', '--purple');
+
+  set('#k3', ev.hb, '--info');
+  set('#k4', ev.msg, '--accent');
+  set('#k5', ev.fail, ev.fail ? '--warn' : '--sub');
+  if (ev.lastRec === null) set('#k6', '-', '--sub');
+  else set('#k6', ev.lastRec + ' ms', ev.lastRec <= LIMIT ? '--good' : '--bad');
+}
+
+// ---------- Charts ----------
+
+function sample() {
+  const now = Date.now();
+  const sil = ev.lastAlive ? now - ev.lastAlive : 0;
+  ev.samples.push({t: now, s: sil, p: ev.promoted});
+  const cut = now - WINDOW;
+  while (ev.samples.length && ev.samples[0].t < cut) ev.samples.shift();
+  ev.markers = ev.markers.filter(m => m.t >= cut);
+}
+
+function prep(c) {
+  const d = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = c.clientHeight;
+  c.width = Math.round(W * d); c.height = Math.round(H * d);
+  const g = c.getContext('2d');
+  g.setTransform(d, 0, 0, d, 0, 0);
+  g.font = '11px "Segoe UI"';
+  g.textBaseline = 'alphabetic';
+  return {g, W, H};
+}
+
+function gridY(g, L, T, pw, ph, yMax, fmt) {
+  g.strokeStyle = cssv('--border'); g.lineWidth = 1;
+  g.fillStyle = cssv('--sub');
+  for (let i = 0; i <= 4; i++) {
+    const y = T + ph - ph * i / 4;
+    g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke();
+    g.fillText(fmt(yMax * i / 4), 6, y + 4);
+  }
+}
+
+function drawHealth() {
+  const {g, W, H} = prep($('#health'));
+  const L = 58, R = 16, T = 26, B = 28, pw = W - L - R, ph = H - T - B;
+  if (pw < 20 || ph < 20) return;
+  const now = Date.now(), start = now - WINDOW;
+  const X = t => L + pw * Math.min(1, Math.max(0, (t - start) / WINDOW));
+
+  let maxS = 3500;
+  ev.samples.forEach(s => { if (s.s > maxS) maxS = s.s; });
+  const yMax = maxS * 1.1;
+  const Y = v => T + ph - ph * Math.min(v, yMax) / yMax;
+
+  g.fillStyle = cssv('--surface'); g.fillRect(0, 0, W, H);
+  gridY(g, L, T, pw, ph, yMax, v => Math.round(v) + ' ms');
+
+  g.fillStyle = cssv('--sub');
+  for (let s = 0; s <= 60; s += 10) {
+    const x = L + pw * s / 60;
+    g.strokeStyle = cssv('--border');
+    g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke();
+    g.fillText(s === 60 ? 'now' : '-' + (60 - s) + 's', x - 12, H - 8);
+  }
+
+  g.fillStyle = 'rgba(248,113,113,0.08)';
+  g.fillRect(L, T, pw, Y(LIMIT) - T);
+
+  g.setLineDash([6, 5]); g.strokeStyle = cssv('--bad'); g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(L, Y(LIMIT)); g.lineTo(L + pw, Y(LIMIT)); g.stroke();
+  g.setLineDash([]);
+  g.fillStyle = cssv('--bad');
+  g.fillText('3 s limit', L + pw - 58, Y(LIMIT) - 6);
+
+  const pts = ev.samples.map(s => [X(s.t), Y(s.s)]);
+  if (pts.length > 1) {
+    g.beginPath();
+    g.moveTo(pts[0][0], T + ph);
+    pts.forEach(p => g.lineTo(p[0], p[1]));
+    g.lineTo(pts[pts.length - 1][0], T + ph);
+    g.closePath();
+    const grad = g.createLinearGradient(0, T, 0, T + ph);
+    grad.addColorStop(0, 'rgba(96,165,250,0.35)');
+    grad.addColorStop(1, 'rgba(96,165,250,0.02)');
+    g.fillStyle = grad; g.fill();
+
+    g.lineWidth = 2; g.lineJoin = 'round';
+    for (let i = 1; i < ev.samples.length; i++) {
+      const a = ev.samples[i - 1], b = ev.samples[i];
+      g.strokeStyle = b.p ? cssv('--good') : cssv('--info');
+      g.beginPath(); g.moveTo(X(a.t), Y(a.s)); g.lineTo(X(b.t), Y(b.s)); g.stroke();
+    }
+  }
+
+  ev.markers.forEach(m => {
+    const x = X(m.t), det = m.k === 0;
+    const c = cssv(det ? '--warn' : '--good');
+    g.strokeStyle = c; g.lineWidth = 1.5; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke();
+    g.setLineDash([]);
+    const text = det ? 'DETECTED' : 'FAILOVER';
+    const ty = T + 13 + (det ? 0 : 1) * 17;
+    const tw = g.measureText(text).width + 12;
+    g.fillStyle = cssv('--surface');
+    g.fillRect(x + 4, ty - 12, tw, 16);
+    g.fillStyle = c;
+    g.fillText(text, x + 10, ty);
+  });
+}
+
+function drawBars() {
+  const {g, W, H} = prep($('#bars'));
+  const L = 58, R = 74, T = 26, B = 28, pw = W - L - R, ph = H - T - B;
+  if (pw < 20 || ph < 20) return;
+
+  const totals = ev.recs.map(r => r.sil + r.promo);
+  const yMax = Math.max(3500, ...totals) * 1.1;
+  const Y = v => T + ph - ph * Math.min(v, yMax) / yMax;
+
+  g.fillStyle = cssv('--surface'); g.fillRect(0, 0, W, H);
+  gridY(g, L, T, pw, ph, yMax, v => Math.round(v) + ' ms');
+
+  g.setLineDash([6, 5]); g.strokeStyle = cssv('--bad'); g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(L, Y(LIMIT)); g.lineTo(L + pw, Y(LIMIT)); g.stroke();
+  g.setLineDash([]);
+  g.fillStyle = cssv('--bad');
+  g.fillText('3 s limit', L + pw + 8, Y(LIMIT) + 4);
+
+  if (!ev.recs.length) {
+    g.fillStyle = cssv('--sub');
+    g.font = '13px "Segoe UI"';
+    g.fillText('No failovers yet. Stop the primary to see a recovery.', L + 20, T + ph / 2);
+    g.font = '11px "Segoe UI"';
+    return;
+  }
+
+  const recs = ev.recs.slice(-12);
+  const slot = pw / Math.max(recs.length, 6);
+  const bw = Math.min(44, slot * 0.6);
+  const base = T + ph;
+  recs.forEach((r, i) => {
+    const x = L + i * slot + (slot - bw) / 2;
+    const silH = ph * Math.min(r.sil, yMax) / yMax;
+    const promoH = Math.max(3, ph * r.promo / yMax);
+    g.fillStyle = cssv('--info');
+    g.fillRect(x, base - silH, bw, silH);
+    g.fillStyle = cssv(r.promo <= LIMIT ? '--good' : '--bad');
+    g.fillRect(x, base - silH - promoH, bw, promoH);
+    g.fillStyle = cssv('--text'); g.font = 'bold 11px "Segoe UI"';
+    g.fillText(r.promo + ' ms', x - 2, base - silH - promoH - 5);
+    g.font = '11px "Segoe UI"';
+    g.fillStyle = cssv('--sub');
+    g.fillText('#' + r.n, x + bw / 2 - 8, base + 16);
+  });
+
+  g.fillStyle = cssv('--info'); g.fillRect(L, 8, 10, 8);
+  g.fillStyle = cssv('--sub'); g.fillText('silence before detection', L + 14, 16);
+  g.fillStyle = cssv('--good'); g.fillRect(L + 170, 8, 10, 8);
+  g.fillStyle = cssv('--sub'); g.fillText('promotion time', L + 184, 16);
+}
+
+async function adminTick() {
+  try {
+    const d = await api('/api/events?token=' + encodeURIComponent(token) + '&since=' + seen);
+    if (d.total < seen) { resetAdmin(); return; }
+    d.lines.forEach(handle);
+    seen = d.total;
+    if (d.lines.length) renderEvents();
+  } catch (e) {}
+  $('#clock').innerHTML = icon('i-clock') + '<span></span>';
+  $('#clock span').textContent = new Date().toLocaleTimeString();
+  updateKpis(); sample(); drawHealth(); drawBars();
+}
+
+// Restore saved theme, default dark
+if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
+paintThemeButtons();
+show('login');
+$('#u').focus();
+</script>
+</body>
+</html>
